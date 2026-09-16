@@ -33,6 +33,7 @@ app.use('/api/artists', artistRoutes);
 app.use('/artists', artistRoutes);
 app.use('/api/songs', songRoutes);
 app.use('/api/users', userRoutes);
+app.use('/users', userRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/venues', venueRoutes);
