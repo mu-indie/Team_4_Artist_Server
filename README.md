@@ -4,18 +4,15 @@
 
 The Artist API is a JSON REST API for an artist-booking platform. It lets the platform's frontend and other clients browse artists, songs, artist and venue profiles, and bookings, as well as create and manage users and those records. The API uses Express and MySQL.
 
-## Base URL
-
-By default, the API listens at `http://localhost:5001` when using the checked-in `.env.example`. The port can be changed with `PORT`. The preferred paths start with `/api`.
-
 ## Authentication
-To check credentials, send a JSON `POST` to `/api/users/login` with `email` and `password` fields. A successful login returns the user's `id`, `name`, `email`, and `role`; it does not issue a token, so it does not authenticate subsequent requests. The current implementation compares the submitted password directly with the database value. Do not use real passwords until password hashing and access control are implemented.
 
-No `Authorization` header is required. Requests with a body should set `Content-Type: application/json`.
+The API currently has no token, session, or authorization middleware. All routes, including write and delete routes, are publicly reachable. No `Authorization` header is required. Requests with a body should set `Content-Type: application/json`.
 
-## Endpoints
+To check credentials, send a JSON `POST` to `/api/users/login` with `email` and `password` fields. A successful login returns the user's `id`, `name`, `email`, and `role`; it does not issue a token, so it does not authenticate subsequent requests. The current implementation compares submitted passwords directly with database values. Do not use real passwords until password hashing and access control are implemented.
 
-All paths below are relative to the base URL. Successful `GET` requests return JSON. Successful `POST` requests generally return `201 Created`; successful `PUT` requests return JSON with `200 OK`; successful `DELETE` requests return an empty `204 No Content` response.
+## Endpoint examples
+
+The deployed API base URL is `https://artist-api-server.onrender.com`. All paths below use the `/api` prefix. Successful `GET` requests return JSON. Successful `POST` requests generally return `201 Created`; successful `PUT` requests return JSON with `200 OK`; successful `DELETE` requests return an empty `204 No Content` response.
 
 | Resource | Routes |
 | --- | --- |
@@ -29,55 +26,52 @@ All paths below are relative to the base URL. Successful `GET` requests return J
 
 The server also mounts artist routes at `/artists` and user routes at `/users` without the `/api` prefix. Use the `/api` paths for new clients.
 
-### Copy-and-paste request
+### Most important endpoint command
 
-List artists from a locally running server:
+List artists from the deployed API:
 
 ```sh
-curl http://localhost:5001/api/artists
+curl https://artist-api-server.onrender.com/api/artists
 ```
 
-This exact command was run against the local server. It returned HTTP `200` and this JSON:
+This exact command was run against the deployed API. It returned HTTP `200` and this JSON:
 
 ```json
-[{"id":4,"name":"Ben","genre":"Afrobeats","bio":"hi"},{"id":2,"name":"Night Echo\n","genre":"Indie","bio":"Alternative musician"},{"id":1,"name":"Ariana Blue","genre":"Pop","bio":"Singer-songwriter"}]
+[{"id":4,"name":"Ben","genre":"Afrobeats","bio":"hi"},{"id":2,"name":"Night Echo","genre":"Indie","bio":"Alternative musician"},{"id":1,"name":"Ariana Blue","genre":"Pop","bio":"Singer-songwriter"}]
 ```
 
-### Live endpoint examples
+### Other endpoint examples
 
-These requests and response bodies were captured from the running local API. Collection contents depend on the connected database.
+These requests and response bodies were captured from the deployed API connected to Railway. Collection contents can change as records are added or updated.
 
 Health and database connectivity:
 
-```http
-GET /api/health
+```sh
+curl https://artist-api-server.onrender.com/api/health
 ```
 
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json; charset=utf-8
-
+```json
 {"api":"ok","database":"connected"}
 ```
 
 List songs:
 
-```http
-GET /api/songs
+```sh
+curl https://artist-api-server.onrender.com/api/songs
 ```
 
 ```json
 [
-  {"id":3,"artistId":10,"title":"dream","genre":"jazz","description":"sasakopsak","audioUrl":"ekwmemw","coverImage":"ewewew","uploadDate":"2026-09-07T21:00:00.000Z","createdAt":"2026-09-08T23:03:47.000Z"},
-  {"id":1,"artistId":1,"title":"City Lights","genre":"Afrobeats","description":"A vibrant city anthem with a warm melodic hook.","audioUrl":"https://example.com/audio/city-lights.mp3","coverImage":"https://example.com/images/city-lights.jpg","uploadDate":"2026-08-31T21:00:00.000Z","createdAt":"2026-09-08T17:28:13.000Z"},
-  {"id":2,"artistId":1,"title":"Midnight Drive","genre":"R&B","description":"Smooth late-night groove for intimate settings.","audioUrl":"https://example.com/audio/midnight-drive.mp3","coverImage":"https://example.com/images/midnight-drive.jpg","uploadDate":"2026-09-03T21:00:00.000Z","createdAt":"2026-09-08T17:28:13.000Z"}
+  {"id":3,"artistId":10,"title":"dream","genre":"jazz","description":"sasakopsak","audioUrl":"ekwmemw","coverImage":"ewewew","uploadDate":"2026-09-08T00:00:00.000Z","createdAt":"2026-09-08T23:03:47.000Z"},
+  {"id":1,"artistId":1,"title":"City Lights","genre":"Afrobeats","description":"A vibrant city anthem with a warm melodic hook.","audioUrl":"https://example.com/audio/city-lights.mp3","coverImage":"https://example.com/images/city-lights.jpg","uploadDate":"2026-09-01T00:00:00.000Z","createdAt":"2026-09-08T17:28:13.000Z"},
+  {"id":2,"artistId":1,"title":"Midnight Drive","genre":"R&B","description":"Smooth late-night groove for intimate settings.","audioUrl":"https://example.com/audio/midnight-drive.mp3","coverImage":"https://example.com/images/midnight-drive.jpg","uploadDate":"2026-09-04T00:00:00.000Z","createdAt":"2026-09-08T17:28:13.000Z"}
 ]
 ```
 
 List artist profiles:
 
-```http
-GET /api/profiles/artists
+```sh
+curl https://artist-api-server.onrender.com/api/profiles/artists
 ```
 
 ```json
@@ -89,18 +83,18 @@ GET /api/profiles/artists
 
 List bookings:
 
-```http
-GET /api/bookings
+```sh
+curl https://artist-api-server.onrender.com/api/bookings
 ```
 
 ```json
-[{"id":1,"artistId":1,"venueId":3,"eventDate":"2026-09-14T21:00:00.000Z","offeredFee":"1200.00","status":"Pending","notes":"Scheduled for a live showcase night.","createdAt":"2026-09-08T17:28:13.000Z"}]
+[{"id":1,"artistId":1,"venueId":3,"eventDate":"2026-09-15T00:00:00.000Z","offeredFee":"1200.00","status":"Pending","notes":"Scheduled for a live showcase night.","createdAt":"2026-09-08T17:28:13.000Z"}]
 ```
 
 List venue profiles:
 
-```http
-GET /api/venues
+```sh
+curl https://artist-api-server.onrender.com/api/venues
 ```
 
 ```json
@@ -109,16 +103,16 @@ GET /api/venues
 
 Register a user with `POST /api/users` using JSON fields `name`, `email`, `password`, and `role`. A successful response has status `201` and returns `id`, `name`, `email`, and `role` (not the password). To create an artist, song, booking, or venue profile, send a JSON object with the fields used by that resource; the route table above shows the collection and item paths.
 
-## Errors
+## Error format
 
 Handled API errors use a JSON object with an `error` string. The HTTP status indicates the failure type. For example, requesting a missing artist:
 
-```http
-GET /api/artists/999999
+```sh
+curl -i https://artist-api-server.onrender.com/api/artists/999999
 ```
 
 ```http
-HTTP/1.1 404 Not Found
+HTTP/2 404
 Content-Type: application/json; charset=utf-8
 
 {"error":"Artist not found."}
@@ -127,13 +121,13 @@ Content-Type: application/json; charset=utf-8
 Invalid login credentials return `401 Unauthorized`:
 
 ```sh
-curl -i -X POST http://localhost:5001/api/users/login \
+curl -i -X POST https://artist-api-server.onrender.com/api/users/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"not-a-user@example.invalid","password":"invalid"}'
 ```
 
 ```http
-HTTP/1.1 401 Unauthorized
+HTTP/2 401
 Content-Type: application/json; charset=utf-8
 
 {"error":"Invalid email or password."}
@@ -143,17 +137,21 @@ Other handled failures include `404` for missing records, `409` when registering
 
 ## Local setup
 
-Prerequisites: Node.js with npm, and a reachable MySQL server. The database must contain the tables expected by the routes: `artists`, `songs`, `users`, `artist_profiles`, `bookings`, and `venue_profiles`.
+Prerequisites: Node.js with npm, and a reachable MySQL server. The database must contain the tables expected by the routes: `artists`, `songs`, `users`, `artist_profiles`, `bookings`, and `venue_profiles`. The `schema.sql` file creates these tables without inserting sample data.
 
-From the repository root after cloning:
+From the cloned server repository root:
 
 ```sh
-cd Team_4_Artist_Server
 npm ci
 cp .env.example .env
 ```
 
-Edit `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` to the MySQL database values. `PORT` defaults to `5001` in `.env.example`; `FRONTEND_ORIGIN` controls the single allowed CORS origin and defaults there to `http://localhost:5173`.
+Edit `.env` and set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` to a reachable MySQL database. `PORT` defaults to `5001` in `.env.example`; `FRONTEND_ORIGIN` controls the single allowed CORS origin and defaults there to `http://localhost:5173`. These example commands create a local database and import the schema; change the host, user, or database name to match `.env` if needed:
+
+```sh
+mysql --host=127.0.0.1 --port=3306 --user=root --password -e 'CREATE DATABASE IF NOT EXISTS artist_platform CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;'
+mysql --host=127.0.0.1 --port=3306 --user=root --password artist_platform < schema.sql
+```
 
 Then start the API:
 
@@ -167,32 +165,6 @@ In another terminal, verify the connection:
 curl http://localhost:5001/api/health
 ```
 
-The expected response with a working database is `{"api":"ok","database":"connected"}`. **This repository does not include database migrations, table-creation SQL, or seed data.** Obtain/import a compatible schema and create the configured database before expecting health to report `connected` or data routes to work. The server may still start without a reachable database, but data operations will return `500` and health will report `503`.
+The expected response with a working database is `{"api":"ok","database":"connected"}`. Import `schema.sql` into the configured database before expecting data routes to work. It creates the six tables but does not add any records. The server may still start without a reachable database, but data operations will return `500` and health will report `503`.
 
 For local development with automatic restarts, run `npm run dev` instead of `npm start`.
-
-## Deploy the server to Render
-
-This repository includes a `render.yaml` Blueprint for the API server only. It builds with `npm ci`, starts with `npm start`, and uses `/api/health` as its health check. It does not deploy the frontend.
-
-### Database prerequisite
-
-The API requires MySQL. Render's managed database Blueprint resource is PostgreSQL, which is not compatible with this server's `mysql2` client. Create or choose an external hosted MySQL database, then make sure it contains the six tables listed under Local setup. This repository does not include schema migrations or seed data, so import a compatible schema before deploying if you need data routes to work.
-
-Use the database provider's connection details to set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME`. Confirm that the provider allows inbound MySQL connections from Render. Never commit these credentials or put them in `render.yaml`.
-
-### Deploy steps
-
-1. Push this server repository, including `render.yaml`, to a GitHub, GitLab, or Bitbucket repository connected to your Render account. Keep `.env` out of Git; it is ignored by `.gitignore`.
-2. In the Render Dashboard, choose **New** then **Blueprint**, connect the server repository, and select `render.yaml`.
-3. Enter the MySQL connection values when Render prompts for the `sync: false` environment variables. Set `FRONTEND_ORIGIN` to the exact origin that will call the API, such as `https://your-frontend.example`; this setting does not deploy that frontend.
-4. Create the Blueprint and wait for the web service deploy. Render supplies `PORT` automatically; do not set it manually.
-5. Test the deployed API, replacing the hostname with the service URL shown in Render:
-
-  ```sh
-  curl https://artist-api-server.onrender.com/api/health
-  ```
-
-  A working database connection returns `{"api":"ok","database":"connected"}`. A `503` response means the service cannot connect to MySQL; verify the host, port, credentials, network access, and schema setup.
-
-The Blueprint uses Render's free web-service plan. Free services may spin down when idle, so the first request after inactivity can take longer. Select a paid plan in Render if you need continuously available production service.
