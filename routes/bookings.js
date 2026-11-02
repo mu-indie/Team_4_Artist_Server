@@ -47,11 +47,22 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { artistId, venueId, eventDate, offeredFee, status, notes } = req.body;
   try {
-    const [result] = await db.query(
+    const [existingRows] = await db.query(`${selectBooking} WHERE id = ?`, [req.params.id]);
+    if (!existingRows.length) return res.status(404).json({ error: 'Booking not found.' });
+
+    const booking = existingRows[0];
+    await db.query(
       'UPDATE bookings SET artist_id = ?, venue_id = ?, event_date = ?, offered_fee = ?, status = ?, notes = ? WHERE id = ?',
-      [artistId, venueId, eventDate, offeredFee, status, notes, req.params.id],
+      [
+        artistId === undefined ? booking.artistId : artistId,
+        venueId === undefined ? booking.venueId : venueId,
+        eventDate === undefined ? booking.eventDate : eventDate,
+        offeredFee === undefined ? booking.offeredFee : offeredFee,
+        status === undefined ? booking.status : status,
+        notes === undefined ? booking.notes : notes,
+        req.params.id,
+      ],
     );
-    if (!result.affectedRows) return res.status(404).json({ error: 'Booking not found.' });
     const [rows] = await db.query(`${selectBooking} WHERE id = ?`, [req.params.id]);
     res.json(rows[0]);
   } catch (err) {
