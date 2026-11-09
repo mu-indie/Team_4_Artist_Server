@@ -1,5 +1,5 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 const requiredConfig = ['DB_HOST', 'DB_USER', 'DB_NAME'];
 const missingConfig = requiredConfig.filter((key) => !process.env[key]);

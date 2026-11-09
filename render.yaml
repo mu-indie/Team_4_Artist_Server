@@ -19,3 +19,17 @@ services:
         sync: false
       - key: FRONTEND_ORIGIN
         sync: false
+      - key: PARTNER_URL
+        sync: false
+      - key: PARTNER_API_KEY
+        sync: false
+      - key: ARTISANS_API_URL
+        sync: false
+      - key: ARTISANS_API_KEY
+        sync: false
+      - key: API_KEY_DEVELOPMENT
+        sync: false
+      - key: API_KEY_PARTNER
+        sync: false
+      - key: USER_TOKEN_SECRET
+        sync: false

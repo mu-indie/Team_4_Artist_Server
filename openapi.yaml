@@ -1,0 +1,1189 @@
+openapi: 3.0.3
+info:
+  title: Artist API
+  version: 1.0.0
+  description: >
+    Artist booking API. API keys authenticate trusted consumer applications;
+    they do not represent individual users or enforce record ownership.
+servers:
+  - url: https://artist-api-server.onrender.com
+    description: Hosted API
+  - url: http://localhost:5001
+    description: Local development
+security:
+  - ApiKeyAuth: []
+paths:
+  /:
+    get:
+      summary: API status
+      responses:
+        '200':
+          description: API is running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/health:
+    get:
+      summary: Database health check
+      description: Public, unmetered health endpoint used by the hosting platform.
+      security: []
+      responses:
+        '200':
+          description: API and database are available.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: API is running but the database is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /upcoming:
+    get:
+      summary: List upcoming partner tasks
+      description: Returns active tasks from the configured partner integration.
+      responses:
+        '200':
+          description: Active partner tasks.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpcomingTasks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          description: Partner data is unavailable.
+        '503':
+          description: Partner integration is not configured.
+  /api/upcoming:
+    get:
+      summary: List upcoming partner tasks
+      description: API-prefixed alias for /upcoming.
+      responses:
+        '200':
+          description: Active partner tasks.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpcomingTasks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          description: Partner data is unavailable.
+        '503':
+          description: Partner integration is not configured.
+  /api/artisans:
+    get:
+      summary: List artisans from the configured integration
+      description: Returns upstream artisan records enriched with phone numbers from their detail records.
+      responses:
+        '200':
+          description: Upstream artisan records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IntegratedArtisan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          description: Artisans data is unavailable.
+        '503':
+          description: Artisans integration is not configured.
+  /api/artists:
+    get:
+      tags: [Artists]
+      summary: List artists
+      description: Public to API-key-authenticated consumers; no user bearer token is required.
+      responses:
+        '200':
+          description: Artist records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artist'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Artists]
+      summary: Create an artist (disabled pending ownership verification)
+      description: Requires an artist user token; writes remain disabled until existing records are assigned verified owners and ownership authorization is tested.
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/artists/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Artists]
+      summary: Get an artist
+      description: Public to API-key-authenticated consumers; no user bearer token is required.
+      responses:
+        '200':
+          description: Artist record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Artists]
+      summary: Update an artist (disabled pending ownership verification)
+      description: Requires an artist user token; writes remain disabled until existing records are assigned verified owners and ownership authorization is tested.
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Artists]
+      summary: Delete an artist (disabled pending ownership verification)
+      description: Requires an artist user token; writes remain disabled until existing records are assigned verified owners and ownership authorization is tested.
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /artists:
+    $ref: '#/paths/~1api~1artists'
+  /artists/{id}:
+    $ref: '#/paths/~1api~1artists~1{id}'
+  /api/songs:
+    get:
+      tags: [Songs]
+      summary: List songs
+      responses:
+        '200':
+          description: Song records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Songs]
+      summary: Create a song
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongInput'
+      responses:
+        '201':
+          description: Song created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/songs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Songs]
+      summary: Get a song
+      responses:
+        '200':
+          description: Song record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Songs]
+      summary: Update a song
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongUpdate'
+      responses:
+        '200':
+          description: Updated song.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Songs]
+      summary: Delete a song
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '204':
+          description: Song deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Get the authenticated user's account
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '200':
+          description: An array containing the authenticated user only.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Users]
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: User created; password is not returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/users/login:
+    post:
+      tags: [Users]
+      summary: Check user credentials
+      description: Requires an API key and issues a signed user access token valid for one hour.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Public user fields and a short-lived access token; password is never returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid API key or user credentials.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiKeyError'
+                  - $ref: '#/components/schemas/ResourceError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Users]
+      summary: Get a user
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '200':
+          description: User fields without a password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Users]
+      summary: Update a user
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Updated user without a password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '204':
+          description: User deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users:
+    $ref: '#/paths/~1api~1users'
+  /users/login:
+    $ref: '#/paths/~1api~1users~1login'
+  /users/{id}:
+    $ref: '#/paths/~1api~1users~1{id}'
+  /api/profiles/artists:
+    get:
+      tags: [Artist profiles]
+      summary: List artist profiles
+      responses:
+        '200':
+          description: Artist profiles and their public social links.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArtistProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/profiles/artists/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Artist profiles]
+      summary: Get an artist profile by user ID
+      responses:
+        '200':
+          description: Artist profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Artist profiles]
+      summary: Save an artist profile
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArtistProfileInput'
+      responses:
+        '200':
+          description: Profile saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Artist profiles]
+      summary: Delete an artist profile
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '204':
+          description: Profile deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/bookings:
+    get:
+      tags: [Bookings]
+      summary: List the authenticated user's bookings
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '200':
+          description: Booking records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Bookings]
+      summary: Create a booking
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingInput'
+      responses:
+        '201':
+          description: Booking created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/bookings/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Bookings]
+      summary: Get a booking
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '200':
+          description: Booking record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Bookings]
+      summary: Update a booking
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingUpdate'
+      responses:
+        '200':
+          description: Updated booking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Bookings]
+      summary: Delete a booking
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '204':
+          description: Booking deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/venues:
+    get:
+      tags: [Venue profiles]
+      summary: List venue profiles
+      responses:
+        '200':
+          description: Venue profile records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VenueProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Venue profiles]
+      summary: Create a venue profile
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueProfileInput'
+      responses:
+        '201':
+          description: Venue profile created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/venues/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Venue profiles]
+      summary: Get a venue profile
+      responses:
+        '200':
+          description: Venue profile record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      tags: [Venue profiles]
+      summary: Update a venue profile
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VenueProfileInput'
+      responses:
+        '200':
+          description: Updated venue profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      tags: [Venue profiles]
+      summary: Delete a venue profile
+      security:
+        - ApiKeyAuth: []
+          UserBearerAuth: []
+      responses:
+        '204':
+          description: Venue profile deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Configure separate 64-character hexadecimal keys for each consumer.
+    UserBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque signed token
+      description: Signed one-hour user token returned by POST /api/users/login.
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key or user access token.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ApiKeyError'
+              - $ref: '#/components/schemas/UserTokenError'
+    TooManyRequests:
+      description: Consumer rate limit exceeded.
+      headers:
+        Retry-After:
+          description: Seconds until another request can be sent.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RateLimitError'
+    NotFound:
+      description: Requested record was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceError'
+    BadRequest:
+      description: Request body is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceError'
+    Conflict:
+      description: The request conflicts with the current resource state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceError'
+    Forbidden:
+      description: The operation is not allowed for this user or resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceError'
+  schemas:
+    ApiKeyError:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Missing or invalid API key
+    UserTokenError:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Missing or invalid user access token
+    RateLimitError:
+      type: object
+      required: [message, retryAfter]
+      properties:
+        message:
+          type: string
+          example: Too many requests
+        retryAfter:
+          type: integer
+          minimum: 1
+          description: Seconds until the caller can retry.
+    ResourceError:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+    Health:
+      type: object
+      properties:
+        api:
+          type: string
+        database:
+          type: string
+    Artist:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+    ArtistInput:
+      type: object
+      properties:
+        name:
+          type: string
+        genre:
+          type: string
+        bio:
+          type: string
+    Song:
+      type: object
+      properties:
+        id:
+          type: integer
+        artistId:
+          type: integer
+        title:
+          type: string
+        genre:
+          type: string
+        description:
+          type: string
+        audioUrl:
+          type: string
+        coverImage:
+          type: string
+        uploadDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+    SongInput:
+      type: object
+      required: [artistId, title, genre, description, audioUrl, coverImage, uploadDate]
+      description: artistId must match the authenticated artist user's ID.
+      properties:
+        artistId:
+          type: integer
+        title:
+          type: string
+        genre:
+          type: string
+        description:
+          type: string
+        audioUrl:
+          type: string
+        coverImage:
+          type: string
+        uploadDate:
+          type: string
+          format: date
+    SongUpdate:
+      type: object
+      required: [title, genre, description, audioUrl, coverImage, uploadDate]
+      properties:
+        title:
+          type: string
+        genre:
+          type: string
+        description:
+          type: string
+        audioUrl:
+          type: string
+        coverImage:
+          type: string
+        uploadDate:
+          type: string
+          format: date
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [artist, venue]
+        createdAt:
+          type: string
+          format: date-time
+    UserLoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required: [accessToken, expiresIn]
+          properties:
+            accessToken:
+              type: string
+              description: Bearer token that expires after one hour.
+            expiresIn:
+              type: integer
+              example: 3600
+    UserInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [artist, venue]
+    UserUpdate:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          description: Optional replacement password.
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    ArtistProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        stageName:
+          type: string
+        genre:
+          type: string
+        bio:
+          type: string
+        location:
+          type: string
+        performanceFee:
+          type: string
+        profileImage:
+          type: string
+          nullable: true
+        instagram:
+          type: string
+          nullable: true
+        youtube:
+          type: string
+          nullable: true
+        spotify:
+          type: string
+          nullable: true
+        socialLinks:
+          type: object
+          additionalProperties:
+            type: string
+    ArtistProfileInput:
+      type: object
+      required: [stageName, genre, bio, location, performanceFee]
+      properties:
+        stageName:
+          type: string
+          maxLength: 255
+        genre:
+          type: string
+          maxLength: 255
+        bio:
+          type: string
+          description: Limited to 65,535 UTF-8 bytes.
+        location:
+          type: string
+          maxLength: 255
+        performanceFee:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 99999999.99
+        profileImage:
+          type: string
+          maxLength: 500
+        socialLinks:
+          type: object
+          properties:
+            instagram:
+              type: string
+              maxLength: 500
+            youtube:
+              type: string
+              maxLength: 500
+            spotify:
+              type: string
+              maxLength: 500
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        artistId:
+          type: integer
+        venueId:
+          type: integer
+        eventDate:
+          type: string
+          format: date
+          nullable: true
+        offeredFee:
+          type: string
+        status:
+          type: string
+          enum: [Pending, Accepted, Confirmed, Rejected, Declined, Cancelled, Completed]
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    BookingInput:
+      type: object
+      description: The authenticated artist must match artistId, or the authenticated venue must match venueId. New bookings always start Pending; status is assigned by the server.
+      required: [artistId, venueId]
+      properties:
+        artistId:
+          type: integer
+        venueId:
+          type: integer
+        eventDate:
+          type: string
+          format: date
+        offeredFee:
+          type: number
+        notes:
+          type: string
+    BookingUpdate:
+      type: object
+      description: Participant IDs cannot be changed. Only the invited participant may confirm or decline a pending booking; either participant may cancel. A completed, declined, or cancelled booking cannot be reopened.
+      properties:
+        artistId:
+          type: integer
+        venueId:
+          type: integer
+        eventDate:
+          type: string
+          format: date
+        offeredFee:
+          type: number
+        status:
+          type: string
+          enum: [Pending, Accepted, Confirmed, Rejected, Declined, Cancelled, Completed]
+        notes:
+          type: string
+    UpcomingTasks:
+      type: array
+      items:
+        type: object
+        properties:
+          title:
+            type: string
+          dueDate:
+            type: string
+            nullable: true
+        additionalProperties: true
+    IntegratedArtisan:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+      additionalProperties: true
+    VenueProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        venueName:
+          type: string
+        location:
+          type: string
+        capacity:
+          type: integer
+        supportedGenres:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    VenueProfileInput:
+      type: object
+      required: [venueName, location, capacity]
+      properties:
+        venueName:
+          type: string
+          maxLength: 255
+        location:
+          type: string
+          maxLength: 255
+          description: Must be a supported Kenyan county when creating a profile.
+        capacity:
+          type: integer
+          minimum: 0
+        supportedGenres:
+          type: string
+          nullable: true
+          maxLength: 255
+        description:
+          type: string
+          nullable: true

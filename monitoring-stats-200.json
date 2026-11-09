@@ -1,0 +1,46 @@
+{
+  "startedAt": "2026-11-09T11:21:32.726Z",
+  "uptimeSeconds": 72.6,
+  "total": 266,
+  "clientErrors": 209,
+  "serverErrors": 0,
+  "errorRatePercent": 0,
+  "avgMs": 2.2,
+  "routes": {
+    "GET /": {
+      "count": 55,
+      "clientErrors": 0,
+      "serverErrors": 0,
+      "avgMs": 0.9,
+      "maxMs": 7.2
+    },
+    "GET (no route)": {
+      "count": 183,
+      "clientErrors": 183,
+      "serverErrors": 0,
+      "avgMs": 0.8,
+      "maxMs": 1.4
+    },
+    "GET /stats": {
+      "count": 2,
+      "clientErrors": 0,
+      "serverErrors": 0,
+      "avgMs": 1.6,
+      "maxMs": 2.2
+    },
+    "GET /api/artists/:id": {
+      "count": 14,
+      "clientErrors": 14,
+      "serverErrors": 0,
+      "avgMs": 24.2,
+      "maxMs": 312.5
+    },
+    "GET /api/songs/:id": {
+      "count": 12,
+      "clientErrors": 12,
+      "serverErrors": 0,
+      "avgMs": 4.7,
+      "maxMs": 31.5
+    }
+  }
+}

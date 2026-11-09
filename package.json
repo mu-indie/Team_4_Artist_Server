@@ -4,9 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:legacy": "node --test tests/*.test.js",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "migrate:passwords": "node scripts/migrateLegacyPasswords.js",
+    "migrate:artist-ownership": "node scripts/migrateArtistOwnership.js",
+    "migrate:booking-statuses": "node scripts/migrateBookingStatuses.js",
+    "migrate:multiple-venue-profiles": "node scripts/migrateMultipleVenueProfiles.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +24,14 @@
     "mysql2": "^3.24.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/__tests__/**/*.test.js"
+    ]
   }
 }

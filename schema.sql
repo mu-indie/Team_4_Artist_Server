@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 CREATE TABLE IF NOT EXISTS `artists` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `owner_user_id` int DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
   `genre` varchar(255) DEFAULT NULL,
   `bio` text,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_artists_owner_user_id` (`owner_user_id`),
+  CONSTRAINT `fk_artists_owner_user` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS `songs` (
@@ -62,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `venue_profiles` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `user_id` (`user_id`),
+  KEY `idx_venue_profiles_user_id` (`user_id`),
   CONSTRAINT `fk_venue_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -70,14 +73,17 @@ CREATE TABLE IF NOT EXISTS `bookings` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `artist_id` int NOT NULL,
   `venue_id` int NOT NULL,
+  `created_by_user_id` int DEFAULT NULL,
   `event_date` date DEFAULT NULL,
   `offered_fee` decimal(10,2) DEFAULT '0.00',
-  `status` enum('Pending','Accepted','Rejected','Completed') NOT NULL DEFAULT 'Pending',
+  `status` enum('Pending','Confirmed','Declined','Cancelled','Completed') NOT NULL DEFAULT 'Pending',
   `notes` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_bookings_artist` (`artist_id`),
   KEY `fk_bookings_venue` (`venue_id`),
+  KEY `idx_bookings_created_by_user_id` (`created_by_user_id`),
   CONSTRAINT `fk_bookings_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_bookings_venue` FOREIGN KEY (`venue_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_bookings_venue` FOREIGN KEY (`venue_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_bookings_created_by_user` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
