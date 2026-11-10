@@ -18,6 +18,7 @@ The deployed API base URL is `https://artist-api-server.onrender.com`. All paths
 | --- | --- |
 | Health | `GET /api/health` |
 | Artists | `GET, POST /api/artists`; `GET, PUT, DELETE /api/artists/:id` |
+| Artisans | `GET /api/artisans` (server-side partner proxy) |
 | Songs | `GET, POST /api/songs`; `GET, PUT, DELETE /api/songs/:id` |
 | Users | `POST /api/users` (register); `POST /api/users/login`; `GET /api/users`; `GET, PUT, DELETE /api/users/:id` |
 | Artist profiles | `GET /api/profiles/artists`; `GET, PUT, DELETE /api/profiles/artists/:userId` |
@@ -25,6 +26,8 @@ The deployed API base URL is `https://artist-api-server.onrender.com`. All paths
 | Venue profiles | `GET, POST /api/venues`; `GET, PUT, DELETE /api/venues/:id` |
 
 The server also mounts artist routes at `/artists` and user routes at `/users` without the `/api` prefix. Use the `/api` paths for new clients.
+
+The frontend retrieves artisan data from this backend's `GET /api/artisans` route. The backend requests the partner's `/api/artisans` list and per-artisan details using the `X-API-Key` header. Configure `ARTISANS_API_URL` and `ARTISANS_API_KEY` in the backend environment; never put the partner key in frontend code or source control.
 
 ### Most important endpoint command
 

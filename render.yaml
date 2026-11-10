@@ -19,3 +19,7 @@ services:
         sync: false
       - key: FRONTEND_ORIGIN
         sync: false
+      - key: ARTISANS_API_URL
+        sync: false
+      - key: ARTISANS_API_KEY
+        sync: false
