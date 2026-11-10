@@ -30,6 +30,46 @@ function readAllowedFrontendOrigins() {
 	return origins;
 }
 
+function normalizeArtisansUrl(rawUrl) {
+	if (!rawUrl || !String(rawUrl).trim()) return null;
+
+	const trimmedUrl = String(rawUrl).trim();
+	let parsedUrl;
+	try {
+		parsedUrl = new URL(trimmedUrl);
+	} catch {
+		return null;
+	}
+
+	const pathname = parsedUrl.pathname.replace(/\/+$/, '');
+	if (/\/api\/artisans(?:\/)?$/i.test(pathname)) {
+		parsedUrl.pathname = pathname;
+		return parsedUrl.toString();
+	}
+
+	parsedUrl.pathname = pathname === '/' ? '/api/artisans' : `${pathname}/api/artisans`;
+	return parsedUrl.toString();
+}
+
+function extractArtisansList(payload) {
+	if (Array.isArray(payload)) return payload;
+	if (payload && typeof payload === 'object') {
+		for (const key of ['data', 'artisans', 'results', 'items']) {
+			if (Array.isArray(payload[key])) return payload[key];
+		}
+	}
+	return null;
+}
+
+function messageForArtisansStatus(statusCode) {
+	if (statusCode === 401) return 'Artisans API authorization failed.';
+	if (statusCode === 403) return 'Artisans API access is forbidden.';
+	if (statusCode === 404) return 'Artisans resource not found.';
+	if (statusCode === 429) return 'Artisans API rate limit reached.';
+	if (statusCode >= 500) return 'Artisans data is currently unavailable.';
+	return 'Artisans data is currently unavailable.';
+}
+
 function createApp(options = {}) {
 	const apiKeys = options.apiKeys || readApiKeys();
 	const rateLimit = options.rateLimit || readRateLimitConfig();
@@ -69,7 +109,13 @@ function createApp(options = {}) {
 	});
 	app.use(security.authenticate);
 	app.use(security.rateLimit);
+	app.get('/stats', statsHandler);
 	app.use(express.json({ limit: '1mb' }));
+	const v1 = require('./v1');
+	const v2 = require('./v2');
+	app.use('/v2', v2);
+	app.use('/v1', v1);
+	app.use('/', v1);
 	app.use((req, res, next) => {
 		if (!req.clientApiProxy && !req.browserClient) return next();
 
@@ -80,8 +126,6 @@ function createApp(options = {}) {
 		if (publicProxyRoute) return next();
 		return userAuth.requireUser(req, res, next);
 	});
-
-	app.get('/stats', statsHandler);
 
 	app.get('/', (req, res) => {
 		res.json({ message: 'Artist API is running' });
@@ -131,16 +175,31 @@ function createApp(options = {}) {
 			return res.status(503).json({ message: 'Artisans integration is not configured.' });
 		}
 
+		const normalizedArtisansUrl = normalizeArtisansUrl(artisansApiUrl);
+		if (!normalizedArtisansUrl) {
+			console.error('Invalid ARTISANS_API_URL configuration.');
+			return res.status(503).json({ message: 'Artisans integration is not configured.' });
+		}
+
+		const listUrl = normalizedArtisansUrl;
+		const detailBaseUrl = `${normalizedArtisansUrl.replace(/\/+$/, '')}/`;
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 10000);
+
 		try {
-			const upstreamResponse = await fetch(artisansApiUrl, {
+			const upstreamResponse = await fetch(listUrl, {
 				headers: { 'X-API-Key': artisansApiKey },
+				signal: controller.signal,
 			});
 			if (!upstreamResponse.ok) {
 				console.error('Artisans API returned HTTP', upstreamResponse.status);
-				return res.status(502).json({ message: 'Artisans data is currently unavailable.' });
+				return res.status(upstreamResponse.status >= 400 && upstreamResponse.status < 600 ? upstreamResponse.status : 502).json({
+					message: messageForArtisansStatus(upstreamResponse.status),
+				});
 			}
 
-			const artisans = await upstreamResponse.json();
+			const payload = await upstreamResponse.json();
+			const artisans = extractArtisansList(payload);
 			if (!Array.isArray(artisans)) {
 				console.error('Artisans API returned an invalid response.');
 				return res.status(502).json({ message: 'Artisans data is currently unavailable.' });
@@ -151,31 +210,41 @@ function createApp(options = {}) {
 					throw new Error('Artisans API returned an artisan without an ID.');
 				}
 
-				const detailUrl = new URL(
-					encodeURIComponent(String(artisan.id)),
-					`${artisansApiUrl.replace(/\/+$/, '')}/`,
-				);
-				const detailResponse = await fetch(detailUrl, {
-					headers: { 'X-API-Key': artisansApiKey },
-				});
-				if (!detailResponse.ok) {
-					console.error('Artisans API detail returned HTTP', detailResponse.status);
-					throw new Error('Artisans API detail request failed.');
-				}
+				const detailUrl = new URL(String(artisan.id), detailBaseUrl);
+				const detailController = new AbortController();
+				const detailTimer = setTimeout(() => detailController.abort(), 10000);
+				try {
+					const detailResponse = await fetch(detailUrl, {
+						headers: { 'X-API-Key': artisansApiKey },
+						signal: detailController.signal,
+					});
+					if (!detailResponse.ok) {
+						console.error('Artisans API detail returned HTTP', detailResponse.status);
+						throw new Error(`Artisans API detail request failed: ${detailResponse.status}`);
+					}
 
-				const detail = await detailResponse.json();
-				const record = detail?.data ?? detail?.artisan ?? detail;
-				if (!record || typeof record !== 'object' || Array.isArray(record)) {
-					throw new Error('Artisans API returned an invalid artisan detail.');
-				}
+					const detail = await detailResponse.json();
+					const record = detail?.data ?? detail?.artisan ?? detail;
+					if (!record || typeof record !== 'object' || Array.isArray(record)) {
+						throw new Error('Artisans API returned an invalid artisan detail.');
+					}
 
-				return { ...artisan, phone: record.phone ?? artisan.phone };
+					return { ...artisan, phone: record.phone ?? artisan.phone };
+				} finally {
+					clearTimeout(detailTimer);
+				}
 			}));
 
 			return res.json(artisansWithPhones);
 		} catch (err) {
+			if (err?.name === 'AbortError') {
+				console.error('Artisans API request timed out.');
+				return res.status(504).json({ message: 'Artisans API request timed out.' });
+			}
 			console.error('Artisans API call failed:', err.cause?.code || err.code || err.message);
 			return res.status(502).json({ message: 'Artisans data is currently unavailable.' });
+		} finally {
+			clearTimeout(timeout);
 		}
 	});
 

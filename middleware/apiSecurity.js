@@ -98,7 +98,7 @@ function createApiSecurity({
 		if (req.method === 'GET' && req.path === '/api/health') return next();
 
 		const origin = req.get('Origin');
-		if (origin && browserOrigins.has(origin)) {
+		if (origin && browserOrigins.has(origin) && req.path !== '/stats') {
 			req.browserClient = true;
 			req.consumerId = `browser:${req.ip}`;
 			return next();
@@ -110,7 +110,6 @@ function createApiSecurity({
 		}
 
 		req.consumerId = consumerId;
-		req.apiKey = req.get('X-API-Key');
 		return next();
 	}
 

@@ -1,8 +1,7 @@
 const crypto = require('node:crypto');
 
-const startedAtTime = Date.now();
 const stats = {
-	startedAt: new Date(startedAtTime).toISOString(),
+	startedAt: new Date().toISOString(),
 	total: 0,
 	clientErrors: 0,
 	serverErrors: 0,
@@ -10,71 +9,70 @@ const stats = {
 	routes: {},
 };
 
-function roundMs(value) {
-	return Math.round(value * 10) / 10;
-}
-
 function newRoute() {
 	return { count: 0, clientErrors: 0, serverErrors: 0, totalMs: 0, maxMs: 0 };
 }
 
+function roundMs(ms) {
+	return Math.round(ms * 10) / 10;
+}
+
 function monitor(req, res, next) {
-	const started = process.hrtime.bigint();
-	const path = req.path;
+	const startedAt = process.hrtime.bigint();
 
 	res.on('finish', () => {
-		const ms = roundMs(Number(process.hrtime.bigint() - started) / 1e6);
-		const caller = req.apiKey
-			? `key-${crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 6)}`
+		const ms = roundMs(Number(process.hrtime.bigint() - startedAt) / 1e6);
+		const status = res.statusCode;
+		const apiKey = req.consumerId && !req.browserClient ? req.get('X-API-Key') : undefined;
+		const caller = apiKey
+			? `key-${crypto.createHash('sha256').update(apiKey).digest('hex').slice(0, 6)}`
 			: 'none';
 
 		console.log(JSON.stringify({
 			time: new Date().toISOString(),
 			method: req.method,
-			path,
-			status: res.statusCode,
+			path: req.baseUrl + req.path,
+			status,
 			ms,
 			caller,
 		}));
 
-		const status = res.statusCode;
-		const routeName = req.route
-			? `${req.method} ${req.baseUrl + req.route.path}`
-			: `${req.method} (no route)`;
-		const route = stats.routes[routeName] || (stats.routes[routeName] = newRoute());
-
 		stats.total += 1;
 		stats.totalMs += ms;
+		if (status >= 400 && status < 500) stats.clientErrors += 1;
+		if (status >= 500) stats.serverErrors += 1;
+
+		const routePath = req.route ? req.baseUrl + req.route.path : '(no route)';
+		const label = req.route ? `${req.method} ${routePath}` : `${req.method} (no route)`;
+		const route = stats.routes[label] || (stats.routes[label] = newRoute());
 		route.count += 1;
 		route.totalMs += ms;
 		route.maxMs = Math.max(route.maxMs, ms);
-		if (status >= 400 && status < 500) {
-			stats.clientErrors += 1;
-			route.clientErrors += 1;
-		} else if (status >= 500) {
-			stats.serverErrors += 1;
-			route.serverErrors += 1;
-		}
+		if (status >= 400 && status < 500) route.clientErrors += 1;
+		if (status >= 500) route.serverErrors += 1;
 	});
 
 	next();
 }
 
 function statsHandler(req, res) {
-	const routes = Object.fromEntries(Object.entries(stats.routes).map(([name, route]) => [
-		name,
-		{
-			count: route.count,
-			clientErrors: route.clientErrors,
-			serverErrors: route.serverErrors,
-			avgMs: route.count ? roundMs(route.totalMs / route.count) : 0,
-			maxMs: route.maxMs,
-		},
-	]));
+	const uptimeSeconds = roundMs((Date.now() - Date.parse(stats.startedAt)) / 1000);
+	const routes = Object.fromEntries(
+		Object.entries(stats.routes).map(([label, route]) => [
+			label,
+			{
+				count: route.count,
+				clientErrors: route.clientErrors,
+				serverErrors: route.serverErrors,
+				avgMs: roundMs(route.totalMs / route.count),
+				maxMs: route.maxMs,
+			},
+		]),
+	);
 
 	res.json({
 		startedAt: stats.startedAt,
-		uptimeSeconds: roundMs((Date.now() - startedAtTime) / 1000),
+		uptimeSeconds,
 		total: stats.total,
 		clientErrors: stats.clientErrors,
 		serverErrors: stats.serverErrors,
